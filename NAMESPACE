@@ -1,0 +1,2 @@
+import(knitr, shiny, shinyBS)
+export(design, conduct)

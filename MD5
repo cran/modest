@@ -1,0 +1,15 @@
+3e8914a126c7fe74f53ba82da572b0eb *DESCRIPTION
+242fde5baa40e6a8f670393690a56a9c *NAMESPACE
+f39021fd1474f9e0227979b2e3b677c9 *R/conduct.R
+9eb49536bfe3750c9df702430ddd9ed4 *R/design.R
+4e0e251c4e7c269bebc93b9a03d9e94b *inst/CITATION
+625cdec0ed879660c3e54dc470cef24a *inst/Conduct/app.R
+21561d786b543f7e07dfc967466309ee *inst/Conduct/mainDoseEscalation.R
+5aa9bc679a5617c3bb23d70042911136 *inst/Conduct/report.Rnw
+e38632d1519847268b47d8d1262a6d4d *inst/Conduct/www/MRC.png
+94ec95bde3944f1ec4916912de930ddc *inst/Design/a.Rnw
+9a3c7275f0bb2391435204d6b62cb70a *inst/Design/app.R
+21561d786b543f7e07dfc967466309ee *inst/Design/mainDoseEscalation.R
+e38632d1519847268b47d8d1262a6d4d *inst/Design/www/MRC.png
+0910eb6862b503de910be60af6c7dc8f *inst/NEWS
+c3653f58203d10d9adcce98db7cdaf9e *man/apps.Rd

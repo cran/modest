@@ -1,0 +1,10 @@
+citHeader("Please cite the modest package in publications as follows:")
+
+citEntry(entry = "Manual",
+         title = "modest: Model-based dose escalation using Shiny tools",
+         author = personList(person(given="Philip", family="Pallmann"), person(given="Fang", family="Wan")),
+         year = "2017",
+         note = "R package version 0.1",
+         url = "https://cran.r-project.org/package=jocre",
+         textVersion = paste("Pallmann P, Wan F (2017) modest: Model-based dose escalation using Shiny tools. R package version 0.1. https://cran.r-project.org/package=modest")
+         )
