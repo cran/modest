@@ -1,0 +1,101 @@
+---
+title: "Evaluating a Model-Based Dose-Escalation Study"
+author: "Philip Pallmann"
+#date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Evaluating a Model-Based Dose-Escalation Study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The aim of a phase I dose-escalation study is to estimate the maximum tolerated dose ([MTD](https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=546597)) of a novel drug or treatment. In practice this often means to identify a dose for which the probability of a patient developing a dose-limiting toxicity ([DLT](https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=44170)) is close to a prespecified target level, typically between 0.20 and 0.33 in cancer trials.
+
+Zhou & Whitehead ([2003](http://dx.doi.org/10.1177/009286150303700108)) described a Bayesian model-based decision procedure to estimate the MTD. It uses logistic regression of the form
+
+$$\log\left(\frac{\text{P(toxicity)}}{1 - \text{P(toxicity)}}\right) = \text{a} + \text{b} \times \log(\text{dose})$$
+to model the relationship between the dose and the probability of observing a DLT, and a 'gain function' (a decision rule) to determine which dose to recommend for the next cohort of patients or as the MTD at the end of the study. The method is [Bayesian](https://en.wikipedia.org/wiki/Bayesian_inference) in the sense that is uses accumulating study data to continually update the dose-toxicity model.
+
+The purpose of this Shiny app is to facilitate the use of the Bayesian model-based decision procedure in phase I dose-escalation studies. It has two parts:
+
+1. a 'Design' module to investigate design options and simulate their operating characteristics;
+2. a 'Conduct' module to guide the dose-finding process throughout the study.
+
+## Input
+
+### 1. Upload design file
+
+Select a locally stored CSV design file obtained from the 'Design' app, and it wil be automatically uploaded and processed. Check the 'Design' tab for a summary of the design parameters and prior information. The design file should be used as downloaded from the 'Design' module and not manipulated by hand.
+
+### 2. Upload data
+
+Patient data can either be uploaded as a CSV file, or manually entered via a spreadsheet interface.
+
+When uploading a data file in CSV format, make sure it contains on row per patient and three columns with the following information:
+
+- an *integer* cohort variable;
+- a *numeric* dose variable;
+- a *binary* response variable (0: no DLT; 1: DLT).
+
+The CSV file may contain further columns, but these will be ignored.
+
+Here is an example:
+
+```{r, echo=FALSE, results='asis'}
+tab <- data.frame(Cohort = rep(1:3, each=3),
+                  Dose = rep(c(1.5, 2.25), c(6, 3)),
+                  Toxicity = c(rep(0, 7), 1, 0))
+knitr::kable(tab, align='c')
+```
+
+Specify whether there are **column headlines in the first row** of the CSV file, and which operators are used as **column** and **decimal separators**; the latter will usually depend on the [locale](https://en.wikipedia.org/wiki/Locale_(computer_software)) of the computer used to create the data file. Select which columns of the dataset contain the **cohort**, **dose**, and **response variable**, respectively. Note that the column headlines in the CSV file do not necessarily have to be 'Cohort', 'Dose', and 'Response'.
+
+The uploaded or manually entered dataset will be displayed under the 'Dataset' tab. If the table and/or graphics look messed up, check whether the right column and decimal separators were selected and columns specified correctly.
+
+Alternatively, tick the box to **enter data manually into a spreadsheet**. By default, a 3x3 table pops up that is populated with some arbitrary values. Click on any cell to change its entry. In the 'Event' column, tick a box to indicate that this patient has experienced a DLT. Add additional rows by right-clicking anywhere on the table and selecting 'Insert row above' or 'Insert row below'. Similarly, delete rows by right-clicking on the specific row and selecting 'Remove row'.
+
+## Output
+
+### 1. Design
+
+Two tables give an overview of the design parameters and the prior information as specified in the design file. 
+
+### 2. Dataset
+
+A table displays the full dataset as uploaded or entered into the spreadsheet. The table is fully searchable can can be sorted by column in ascending or descending order. Two plots show which patients received which doses and whether they experienced a DLT or not (left), and how often each dose was administered over the course of the study (right). A warning is issued if the dataset contains doses that are not among those prespecified in the design.
+
+### 3. Recommendation
+
+Based on the design parameters, prior information, and study data, one of the following recommendations is given for the next cohort to enter the study:
+
+- to repeat the previous dose;
+- to escalate the dose;
+- to de-escalate the dose;
+- to stop recruitment to the study.
+
+Stopping may be recommended for one of the following reasons:
+
+- the maximum number of patients have been included in the study;
+- the maximum number of consecutive patients receiving the same dose has been reached;
+- a sufficiently accurate estimate of the MTD has been obtained; 
+- none of the pre-specified doses is deemed safe.
+
+Note that multiple reasons may apply at the same time, for example when the MTD estimate reaches sufficient accuracy at the envisaged end of the study.
+
+A plot shows the estimated dose-toxicity curves and corresponding MTDs based on:
+
+- the prior information (green);
+- the prior information and all patient data accumulated so far (red);
+- all patient data excluding the prior information (blue; only shown if the study is to be stopped).
+
+The idea behind the latter is to obtain a purely data-based estimate of the MTD. While the red and blue curves may look very different, their MTD estimates are usually very similar though, especially with not-too-small sample sizes. All curves are presented alongside [pointwise](https://en.wikipedia.org/wiki/Confidence_and_prediction_bands) 95% [normal approximation](https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation) confidence bands. A table summarises the intercept and slope parameters of the models.
+
+In some cases the study may be terminated despite the recommendation being to continue. Tick the box to indicate that **the study has been stopped** in order to **display the final model estimates**.
+
+### 4. Download
+
+A PDF report summarising the design, prior information, study data, and recommendation is available for download.
+
+## Reference
+
+Yinghui Zhou & John Whitehead (2003) Practical implementation of Bayesian dose-escalation procedures. *Drug Information Journal*, **37**(1), 45-59. DOI: [10.1177/009286150303700108](http://dx.doi.org/10.1177/009286150303700108)

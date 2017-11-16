@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Philip Pallmann" />
+
+
+<title>Designing a Model-Based Dose-Escalation Study</title>
+
+
+
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Designing a Model-Based Dose-Escalation Study</h1>
+<h4 class="author"><em>Philip Pallmann</em></h4>
+
+
+
+<p>The aim of a phase I dose-escalation study is to estimate the maximum tolerated dose (<a href="https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=546597">MTD</a>) of a novel drug or treatment. In practice this often means to identify a dose for which the probability of a patient developing a dose-limiting toxicity (<a href="https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=44170">DLT</a>) is close to a prespecified target level, typically between 0.20 and 0.33 in cancer trials.</p>
+<p>Zhou &amp; Whitehead (<a href="http://dx.doi.org/10.1177/009286150303700108">2003</a>) described a Bayesian model-based decision procedure to estimate the MTD. It uses logistic regression of the form</p>
+<p><span class="math display">\[\log\left(\frac{\text{P(toxicity)}}{1 - \text{P(toxicity)}}\right) = \text{a} + \text{b} \times \log(\text{dose})\]</span> to model the relationship between the dose and the probability of observing a DLT, and a ‘gain function’ (a decision rule) to determine which dose to recommend for the next cohort of patients or as the MTD at the end of the study. The method is <a href="https://en.wikipedia.org/wiki/Bayesian_inference">Bayesian</a> in the sense that is uses accumulating study data to continually update the dose-toxicity model.</p>
+<p>The purpose of this Shiny app is to facilitate the use of the Bayesian model-based decision procedure in phase I dose-escalation studies. It has two parts:</p>
+<ol style="list-style-type: decimal">
+<li>a ‘Design’ module to investigate design options and simulate their operating characteristics;</li>
+<li>a ‘Conduct’ module to guide the dose-finding process throughout the study.</li>
+</ol>
+<div id="input" class="section level2">
+<h2>Input</h2>
+<div id="basic-settings" class="section level3">
+<h3>1. Basic settings</h3>
+<p>Specify some basic parameters, including the <strong>maximum number of patients</strong> to be recruited to the study, the number of <strong>patients per cohort</strong>, and the <strong>target toxicity level</strong>, which is typically between 0.20 and 0.33. Enter the set of <strong>doses</strong> to be investigated, separated by commas (spaces are optional) and using dots to represent decimal points; for example:</p>
+<blockquote>
+<p>1, 1.5, 2.25, 4.5, 8</p>
+</blockquote>
+<p>Do not use any thousands separator; for example:</p>
+<blockquote>
+<p>500, 1000, 2000, 5000, 12000</p>
+</blockquote>
+<p>Choose a <strong>gain function</strong> that will serve as a decision rule to determine the dose recommendation for the next cohort of patients, based on the MTD estimate from the model. There are two options:</p>
+<ol style="list-style-type: decimal">
+<li><em>Patient gain</em> chooses the dose that is currently thought to be closest to the target toxicity level.</li>
+<li><em>Variance gain</em> chooses the dose that maximises the information about the dose-toxicity relationship.</li>
+</ol>
+<p>Thus <em>patient gain</em> seeks to find the dose that is optimal from a patient’s perspective, whereas <em>variance gain</em> seeks to find the dose that is optimal from an investigator’s perspective. Whitehead &amp; Williamson (<a href="http://dx.doi.org/10.1080/10543409808835252">1998</a>) provide a detailed mathematical description of both gain functions.</p>
+</div>
+<div id="prior-information" class="section level3">
+<h3>2. Prior information</h3>
+<p>Express the prior opinion about the dose-toxicity relationship as guesses of <strong>toxicity rates</strong> for <strong>two doses</strong>, from which a prior logistic model can be deduced. This is usually much easier than specifying the intercept and slope of a logistic model directly. Choose two doses—preferably at opposite ends of the prespecified dose set—and guess the proportions of DLTs associated with them.</p>
+<p>Determine the strength of belief in the prior guesses in terms of <strong>pseudo-observations</strong>. In the computations that combine prior guesses with real study data, the information from, say, 3 pseudo-observations (a sensible choice in general) is are weighted as if it had been obtained from 3 real patients.</p>
+</div>
+<div id="simulation-model" class="section level3">
+<h3>3. Simulation model</h3>
+<p>Define the assumed true (but in practice unknown) dose-toxicity relationship for simulation purposes. To this end specify <strong>toxicity rates</strong> for two <strong>doses</strong>, from which a logistic model will be derived, in a similar fashion as for the prior.</p>
+</div>
+<div id="escalation-stopping-rules" class="section level3">
+<h3>4. Escalation &amp; stopping rules</h3>
+<p>In the Bayesian model-based decision procedure, recommendations whether to (de-)escalate the dose for subsequent cohorts of patients are governed by the specified model, prior, and gain function. In certain cases these strictly model-based recommendations may raise safety concerns, and it may be desirable to override them.</p>
+<p>The model-based dose recommendation for the first cohort will largely depend on the chosen prior. From a safety point of view, however, it could be preferable to <strong>always start at the lowest dose</strong>.</p>
+<p>When the first cohort must receive the lowest dose (although the model would suggest a higher one) and no DLTs occur, it may happen that the model-based recommendation for the next cohort is a significant dose increase. This can be prevented by forcing the procedure <strong>not to skip over any doses when escalating</strong>.</p>
+<p>In similar situations where starting at the lowest dose is mandatory, the model-based recommendation may be to escalate despite observing one or more DLTs in the preceding cohort. Again, this has the potential to raise safety concerns, but can be avoided by constraining the procedure <strong>not to escalate upon observing a toxicity</strong>.</p>
+<p>When no escalation or de-escalation is recommended for several consecutive cohorts, this may be viewed as an indication that the current dose is the MTD and that recruiting further patients is unnecessary. In that case choose the option to <strong>stop after a given number of consecutive patients at the same dose</strong> and specify said number, preferably as a multiple of the cohort size.</p>
+<p>A sufficiently accurate estimate of the MTD, as measured by its 95% confidence interval, could be another criterion for stopping recruitment to the study. When specifying the <strong>accuracy for stopping</strong>, a value of, say, 5 means that stopping is recommended if the ratio of the 95% upper confidence bound divided by the 95% lower bound is 5 or less. Stopping for accuracy can be suppressed by setting the accuracy value to 1 (which would require the upper and lower bound to be the same).</p>
+</div>
+<div id="simulations" class="section level3">
+<h3>5. Simulations</h3>
+<p>Choose a simulation <strong>scenario</strong> (see the ‘Scenarios’ tab) and number of <strong>repetitions</strong>.</p>
+</div>
+</div>
+<div id="output" class="section level2">
+<h2>Output</h2>
+<div id="model" class="section level3">
+<h3>1. Model</h3>
+<p>The green curve represents the dose-toxicity model as derived from the prior information, alongside <a href="https://en.wikipedia.org/wiki/Confidence_and_prediction_bands">pointwise</a> 95% <a href="https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation">normal approximation</a> confidence bands (dotted). Its intersection with the horizontal dashed line is the current estimate of the MTD. The prior guesses of toxicity rates for two doses are marked by green crosses. The blue curve represents the assumed true dose-toxicity relationship. Its intersection with the target toxicity level (dashed horizontal line) determines the target dose. The intercepts and slopes of both models are presented in a table.</p>
+</div>
+<div id="example" class="section level3">
+<h3>2. Example</h3>
+<p>One dose-escalation study is simulated under the current parameter settings, prior information, escalation and stopping rules, assuming the specified simulation model describes the true dose-toxicity relationship. The graphs are meant to be an illustrative example of what the study <em>could</em> look like. However, since it is merely a single simulation run, it is <em>not</em> necessarily representative of the current scenario, neither should it be viewed as a ‘typical’ study under this scenario. Click the button at the bottom (as often as desired) to generate different example runs.</p>
+</div>
+<div id="scenarios" class="section level3">
+<h3>3. Scenarios</h3>
+<p>Six scenarios for the ‘true’ dose-toxicity relationship are available for simulation, based on Table 1 in Zhou &amp; Whitehead (<a href="http://dx.doi.org/10.1177/009286150303700108">2003</a>).</p>
+<ul>
+<li>The ‘standard’ scenario is the same as defined by the assumed ‘true’ simulation model.</li>
+<li>The ‘potent’ and ‘very potent’ scenarios imply that the investigated drug or treatment is <em>more toxic</em> than under the ‘standard’ scenario.</li>
+<li>The ‘inactive’ and ‘very inactive’ scenarios imply that the investigated drug or treatment is <em>less toxic</em> than under the ‘standard’ scenario.</li>
+<li>The ‘steep’ scenario implies that low doses are <em>less toxic</em> but high doses are <em>more toxic</em> than under the ‘standard’ scenario.</li>
+</ul>
+<p>They are all derived from the assumed ‘true’ simulation model by multiplying the toxicity rates for the low and high dose, respectively, with scenario-specific factors:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Design</th>
+<th align="center">LowDose</th>
+<th align="center">HighDose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">Standard</td>
+<td align="center">1.0</td>
+<td align="center">1.0</td>
+</tr>
+<tr class="even">
+<td align="center">Potent</td>
+<td align="center">1.2</td>
+<td align="center">1.2</td>
+</tr>
+<tr class="odd">
+<td align="center">Inactive</td>
+<td align="center">0.8</td>
+<td align="center">0.8</td>
+</tr>
+<tr class="even">
+<td align="center">Steep</td>
+<td align="center">0.8</td>
+<td align="center">1.2</td>
+</tr>
+<tr class="odd">
+<td align="center">Very potent</td>
+<td align="center">1.4</td>
+<td align="center">1.4</td>
+</tr>
+<tr class="even">
+<td align="center">Very inactive</td>
+<td align="center">0.6</td>
+<td align="center">0.6</td>
+</tr>
+</tbody>
+</table>
+<p>For example, assume the ‘true’ probability of a DLT is 0.20 at the low dose and 0.45 at the high dose. Then the toxicity rates of the six simulation scenarios are as follows:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Design</th>
+<th align="center">LowDose</th>
+<th align="center">HighDose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">Standard</td>
+<td align="center">0.20</td>
+<td align="center">0.45</td>
+</tr>
+<tr class="even">
+<td align="center">Potent</td>
+<td align="center">0.24</td>
+<td align="center">0.54</td>
+</tr>
+<tr class="odd">
+<td align="center">Inactive</td>
+<td align="center">0.16</td>
+<td align="center">0.36</td>
+</tr>
+<tr class="even">
+<td align="center">Steep</td>
+<td align="center">0.16</td>
+<td align="center">0.54</td>
+</tr>
+<tr class="odd">
+<td align="center">Very potent</td>
+<td align="center">0.35</td>
+<td align="center">0.63</td>
+</tr>
+<tr class="even">
+<td align="center">Very inactive</td>
+<td align="center">0.15</td>
+<td align="center">0.27</td>
+</tr>
+</tbody>
+</table>
+<p>A table shows the toxicity rates of the six scenarios alongside the intercepts and slopes of the corresponding logistic models. The dose-toxicity curves are displayed in a graph, together with the prior model for comparison.</p>
+</div>
+<div id="simulations-1" class="section level3">
+<h3>4. Simulations</h3>
+<p>When it comes to choosing a model-based design for a dose-escalation study, simulated operating characteristics are an important tool for informed decision making. Keep in mind that simulations are inevitably subject to random variation; to get sufficiently stable results, a minimum of 1000 simulations per setting is recommended.</p>
+<p>The first table presents simulation results averaged over the total number of simulation runs for the following parameters:</p>
+<ul>
+<li>study sample size,</li>
+<li>maximum likelihood estimate (MLE) of the MTD,</li>
+<li>mean squared error (MSE) of the MTD estimate,</li>
+<li>bias of the MTD estimate,</li>
+<li>percentage of study patients experiencing a DLT.</li>
+</ul>
+<p>For the ‘standard’ scenario, the MLE should be close to the target dose (see ‘Model’ tab). Likewise, the toxicity rate should be close to the pre-specified target toxicity level. MSE and bias are measures of the quality of the MLE that should be small relative to the MLE and ideally (close to) zero.</p>
+<p>The second table lists how often simulated studies were stopped for one of the following reasons:</p>
+<ul>
+<li>the maximum number of patients have been included in the study;</li>
+<li>the maximum number of consecutive patients receiving the same dose has been reached;</li>
+<li>a sufficiently accurate estimate of the MTD has been obtained;</li>
+<li>none of the pre-specified doses is deemed safe.</li>
+</ul>
+<p>Note that multiple reasons may apply at the same time, for example when the MTD estimate reaches sufficient accuracy at the envisaged end of the study; hence the sum of the individual percentages may be more than 100%.</p>
+<p>Bar charts give an overview of:</p>
+<ul>
+<li>how many studies used how many patients;</li>
+<li>how many DLTs were observed in how many studies;</li>
+<li>how often studies were stopped for what reasons;</li>
+<li>how often each dose was recommended at the end of a study.</li>
+</ul>
+<p>Detailed results for all individual simulated study are summarised in a table with the following information:</p>
+<ul>
+<li>study sample size,</li>
+<li>number of DLTs observed,</li>
+<li>MLE estimate of the MTD,</li>
+<li>reason why the study was stopped.</li>
+<li>dose recommended as the MTD at the end of the study.</li>
+</ul>
+<p>When the MLE cannot be estimated, ‘NA’ is displayed instead. When none of the pre-specified doses is deemed safe, the recommendation is ‘none’.</p>
+<p>When multiple simulations are conducted for different settings, further rows are added to the first two tables so as to facilitate comparisons. The bar charts as well as the table with detailed results are always replaced with the most current scenario.</p>
+</div>
+<div id="downloads" class="section level3">
+<h3>5. Downloads</h3>
+<p>A CSV design file for subsequent use in the ‘Conduct’ app can be downloaded. Also a PDF report summarising the design, prior information, and simulation results is available for download. Detailed results of the simulations run under the current scenario can be downloaded as a csv file, too.</p>
+</div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>John Whitehead &amp; David Williamson (1998) Bayesian decision procedures based on logistic regression models for dose-finding studies. <em>Journal of Biopharmaceutical Statistics</em>, <strong>8</strong>(3), 445-467. DOI: <a href="http://dx.doi.org/10.1080/10543409808835252">10.1080/10543409808835252</a>.</p>
+<p>Yinghui Zhou &amp; John Whitehead (2003) Practical implementation of Bayesian dose-escalation procedures. <em>Drug Information Journal</em>, <strong>37</strong>(1), 45-59. DOI: <a href="http://dx.doi.org/10.1177/009286150303700108">10.1177/009286150303700108</a></p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

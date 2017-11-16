@@ -1,0 +1,160 @@
+---
+title: "Designing a Model-Based Dose-Escalation Study"
+author: "Philip Pallmann"
+#date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Designing a Model-Based Dose-Escalation Study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The aim of a phase I dose-escalation study is to estimate the maximum tolerated dose ([MTD](https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=546597)) of a novel drug or treatment. In practice this often means to identify a dose for which the probability of a patient developing a dose-limiting toxicity ([DLT](https://www.cancer.gov/publications/dictionaries/cancer-terms?cdrid=44170)) is close to a prespecified target level, typically between 0.20 and 0.33 in cancer trials.
+
+Zhou & Whitehead ([2003](http://dx.doi.org/10.1177/009286150303700108)) described a Bayesian model-based decision procedure to estimate the MTD. It uses logistic regression of the form
+
+$$\log\left(\frac{\text{P(toxicity)}}{1 - \text{P(toxicity)}}\right) = \text{a} + \text{b} \times \log(\text{dose})$$
+to model the relationship between the dose and the probability of observing a DLT, and a 'gain function' (a decision rule) to determine which dose to recommend for the next cohort of patients or as the MTD at the end of the study. The method is [Bayesian](https://en.wikipedia.org/wiki/Bayesian_inference) in the sense that is uses accumulating study data to continually update the dose-toxicity model.
+
+The purpose of this Shiny app is to facilitate the use of the Bayesian model-based decision procedure in phase I dose-escalation studies. It has two parts:
+
+1. a 'Design' module to investigate design options and simulate their operating characteristics;
+2. a 'Conduct' module to guide the dose-finding process throughout the study.
+
+## Input
+
+### 1. Basic settings
+
+Specify some basic parameters, including the **maximum number of patients** to be recruited to the study, the number of **patients per cohort**, and the **target toxicity level**, which is typically between 0.20 and 0.33. Enter the set of **doses** to be investigated, separated by commas (spaces are optional) and using dots to represent decimal points; for example:
+
+> 1, 1.5, 2.25, 4.5, 8
+
+Do not use any thousands separator; for example:
+
+> 500, 1000, 2000, 5000, 12000
+
+Choose a **gain function** that will serve as a decision rule to determine the dose recommendation for the next cohort of patients, based on the MTD estimate from the model. There are two options: 
+
+1. *Patient gain* chooses the dose that is currently thought to be closest to the target toxicity level.
+2. *Variance gain* chooses the dose that maximises the information about the dose-toxicity relationship.
+
+Thus *patient gain* seeks to find the dose that is optimal from a patient's perspective, whereas *variance gain* seeks to find the dose that is optimal from an investigator's perspective. Whitehead & Williamson ([1998](http://dx.doi.org/10.1080/10543409808835252)) provide a detailed mathematical description of both gain functions.
+
+### 2. Prior information
+
+Express the prior opinion about the dose-toxicity relationship as guesses of **toxicity rates** for **two doses**, from which a prior logistic model can be deduced. This is usually much easier than specifying the intercept and slope of a logistic model directly. Choose two doses---preferably at opposite ends of the prespecified dose set---and guess the proportions of DLTs associated with them.
+
+Determine the strength of belief in the prior guesses in terms of **pseudo-observations**. In the computations that combine prior guesses with real study data, the information from, say, 3 pseudo-observations (a sensible choice in general) is are weighted as if it had been obtained from 3 real patients.
+
+### 3. Simulation model
+
+Define the assumed true (but in practice unknown) dose-toxicity relationship for simulation purposes. To this end specify **toxicity rates** for two **doses**, from which a logistic model will be derived, in a similar fashion as for the prior.
+
+### 4. Escalation & stopping rules
+
+In the Bayesian model-based decision procedure, recommendations whether to (de-)escalate the dose for subsequent cohorts of patients are governed by the specified model, prior, and gain function. In certain cases these strictly model-based recommendations may raise safety concerns, and it may be desirable to override them.
+
+The model-based dose recommendation for the first cohort will largely depend on the chosen prior. From a safety point of view, however, it could be preferable to **always start at the lowest dose**.
+
+When the first cohort must receive the lowest dose (although the model would suggest a higher one) and no DLTs occur, it may happen that the model-based recommendation for the next cohort is a significant dose increase. This can be prevented by forcing the procedure **not to skip over any doses when escalating**.
+
+In similar situations where starting at the lowest dose is mandatory, the model-based recommendation may be to escalate despite observing one or more DLTs in the preceding cohort. Again, this has the potential to raise safety concerns, but can be avoided by constraining the procedure **not to escalate upon observing a toxicity**.
+
+When no escalation or de-escalation is recommended for several consecutive cohorts, this may be viewed as an indication that the current dose is the MTD and that recruiting further patients is unnecessary. In that case choose the option to **stop after a given number of consecutive patients at the same dose** and specify said number, preferably as a multiple of the cohort size.
+
+A sufficiently accurate estimate of the MTD, as measured by its 95% confidence interval, could be another criterion for stopping recruitment to the study. When specifying the **accuracy for stopping**, a value of, say, 5 means that stopping is recommended if the ratio of the 95% upper confidence bound divided by the 95% lower bound is 5 or less. Stopping for accuracy can be suppressed by setting the accuracy value to 1 (which would require the upper and lower bound to be the same).
+
+### 5. Simulations
+
+Choose a simulation **scenario** (see the 'Scenarios' tab) and number of **repetitions**.
+
+## Output
+
+### 1. Model
+
+The green curve represents the dose-toxicity model as derived from the prior information, alongside [pointwise](https://en.wikipedia.org/wiki/Confidence_and_prediction_bands) 95% [normal approximation](https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation) confidence bands (dotted). Its intersection with the horizontal dashed line is the current estimate of the MTD. The prior guesses of toxicity rates for two doses are marked by green crosses. The blue curve represents the assumed true dose-toxicity relationship. Its intersection with the target toxicity level (dashed horizontal line) determines the target dose. The intercepts and slopes of both models are presented in a table.
+
+### 2. Example
+
+One dose-escalation study is simulated under the current parameter settings, prior information, escalation and stopping rules, assuming the specified simulation model describes the true dose-toxicity relationship. The graphs are meant to be an illustrative example of what the study *could* look like. However, since it is merely a single simulation run, it is *not* necessarily representative of the current scenario, neither should it be viewed as a 'typical' study under this scenario. Click the button at the bottom (as often as desired) to generate different example runs.
+
+### 3. Scenarios
+
+Six scenarios for the 'true' dose-toxicity relationship are available for simulation, based on Table 1 in Zhou & Whitehead ([2003](http://dx.doi.org/10.1177/009286150303700108)).
+
+- The 'standard' scenario is the same as defined by the assumed 'true' simulation model.
+- The 'potent' and 'very potent' scenarios imply that the investigated drug or treatment is *more toxic* than under the 'standard' scenario.
+- The 'inactive' and 'very inactive' scenarios imply that the investigated drug or treatment is *less toxic* than under the 'standard' scenario.
+- The 'steep' scenario implies that low doses are *less toxic* but high doses are *more toxic* than under the 'standard' scenario.
+
+They are all derived from the assumed 'true' simulation model by multiplying the toxicity rates for the low and high dose, respectively, with scenario-specific factors:
+
+```{r, echo=FALSE, results='asis'}
+tab1 <- data.frame(Design = c("Standard", "Potent", "Inactive", "Steep", "Very potent", "Very inactive"),
+                   LowDose = c(1.0, 1.2, 0.8, 0.8, 1.4, 0.6),
+                   HighDose = c(1.0, 1.2, 0.8, 1.2, 1.4, 0.6))
+knitr::kable(tab1, align='c')
+```
+
+For example, assume the 'true' probability of a DLT is 0.20 at the low dose and 0.45 at the high dose. Then the toxicity rates of the six simulation scenarios are as follows:
+
+```{r, echo=FALSE, results='asis'}
+tab2 <- data.frame(Design = c("Standard", "Potent", "Inactive", "Steep", "Very potent", "Very inactive"),
+                   LowDose = c(0.20, 0.24, 0.16, 0.16, 0.35, 0.15),
+                   HighDose = c(0.45, 0.54, 0.36, 0.54, 0.63, 0.27))
+knitr::kable(tab2, align='c')
+```
+
+A table shows the toxicity rates of the six scenarios alongside the intercepts and slopes of the corresponding logistic models. The dose-toxicity curves are displayed in a graph, together with the prior model for comparison.
+
+### 4. Simulations
+
+When it comes to choosing a model-based design for a dose-escalation study, simulated operating characteristics are an important tool for informed decision making. Keep in mind that simulations are inevitably subject to random variation; to get sufficiently stable results, a minimum of 1000 simulations per setting is recommended.
+
+The first table presents simulation results averaged over the total number of simulation runs for the following parameters:
+
+- study sample size,
+- maximum likelihood estimate (MLE) of the MTD,
+- mean squared error (MSE) of the MTD estimate,
+- bias of the MTD estimate,
+- percentage of study patients experiencing a DLT.
+
+For the 'standard' scenario, the MLE should be close to the target dose (see 'Model' tab). Likewise, the toxicity rate should be close to the pre-specified target toxicity level. MSE and bias are measures of the quality of the MLE that should be small relative to the MLE and ideally (close to) zero. 
+
+The second table lists how often simulated studies were stopped for one of the following reasons:
+
+- the maximum number of patients have been included in the study;
+- the maximum number of consecutive patients receiving the same dose has been reached;
+- a sufficiently accurate estimate of the MTD has been obtained;
+- none of the pre-specified doses is deemed safe.
+
+Note that multiple reasons may apply at the same time, for example when the MTD estimate reaches sufficient accuracy at the envisaged end of the study; hence the sum of the individual percentages may be more than 100%.
+
+Bar charts give an overview of:
+
+- how many studies used how many patients;
+- how many DLTs were observed in how many studies;
+- how often studies were stopped for what reasons;
+- how often each dose was recommended at the end of a study.
+
+Detailed results for all individual simulated study are summarised in a table with the following information: 
+
+- study sample size,
+- number of DLTs observed,
+- MLE estimate of the MTD,
+- reason why the study was stopped.
+- dose recommended as the MTD at the end of the study.
+
+When the MLE cannot be estimated, 'NA' is displayed instead. When none of the pre-specified doses is deemed safe, the recommendation is 'none'.
+
+When multiple simulations are conducted for different settings, further rows are added to the first two tables so as to facilitate comparisons. The bar charts as well as the table with detailed results are always replaced with the most current scenario.
+
+### 5. Downloads
+
+A CSV design file for subsequent use in the 'Conduct' app can be downloaded. Also a PDF report summarising the design, prior information, and simulation results is available for download. Detailed results of the simulations run under the current scenario can be downloaded as a csv file, too.
+
+## References
+
+John Whitehead & David Williamson (1998) Bayesian decision procedures based on logistic regression models for dose-finding studies. *Journal of Biopharmaceutical Statistics*, **8**(3), 445-467. DOI: [10.1080/10543409808835252](http://dx.doi.org/10.1080/10543409808835252).
+
+Yinghui Zhou & John Whitehead (2003) Practical implementation of Bayesian dose-escalation procedures. *Drug Information Journal*, **37**(1), 45-59. DOI: [10.1177/009286150303700108](http://dx.doi.org/10.1177/009286150303700108)

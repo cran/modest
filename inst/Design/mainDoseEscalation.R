@@ -149,16 +149,20 @@ setMethod(f="plot", signature("SimulationHistory"),
                     main="Doses Administered")
             plot(x@recs$round, x@recs$pme_estimate, type="l",
                  ylim=c(min(x@recs$lower, x@true_value), max(if(max(x@recs$upper)==Inf){x@true_value}else{x@recs$upper}, x@true_value)),
-                 xlab="Cohort", ylab="Estimate", main="Estimates")
-            lines(x@recs$round, x@recs$lower, type="l", lty=2)
-            lines(x@recs$round, x@recs$upper, type="l", lty=2)
-            abline(h=x@true_value, col=2)
-            plot(x@recs$round, x@recs$pme_estimate, type="l",
-                 ylim=c(min(x@dose_set, x@true_value, x@recs$round), max(x@dose_set, x@true_value, x@recs$round)),
-                 xlab="Cohort", ylab="Estimate", main="Estimates (zoomed in)")
-            lines(x@recs$round, x@recs$lower, type="l", lty=2)
-            lines(x@recs$round, x@recs$upper, type="l", lty=2)
-            abline(h=x@true_value, col=2)
+                 xlab="Cohort", ylab="Dose", main="MTD Estimates", lwd=2, col=4)
+            lines(x@recs$round, x@recs$lower, type="l", lty=3, lwd=2, col=4)
+            lines(x@recs$round, x@recs$upper, type="l", lty=3, lwd=2, col=4)
+            abline(h=x@true_value, lty=2, lwd=2)
+            legend("topright", lty=c(2, 1, 3), lwd=2, col=c(1, 4, 4),
+                   legend=c("True MTD", "MTD estimate", "95% confidence band"), bty="n")
+            #plot(x@recs$round, x@recs$pme_estimate, type="l",
+            #     ylim=c(min(x@dose_set, x@true_value, x@recs$round), max(x@dose_set, x@true_value, x@recs$round)),
+            #     xlab="Cohort", ylab="Dose", main="MTD Estimates (zoomed in)", lwd=2, col=4)
+            #lines(x@recs$round, x@recs$lower, type="l", lty=3, lwd=2, col=4)
+            #lines(x@recs$round, x@recs$upper, type="l", lty=3, lwd=2, col=4)
+            #abline(h=x@true_value, lty=2, lwd=2)
+            #legend("topright", lty=c(2, 1, 3), lwd=2, col=c(1, 4, 4),
+            #       legend=c("True MTD", "MTD estimate", "95% confidence band"), bty="n")
           }
 )
 
@@ -176,8 +180,8 @@ setMethod(f="plot", signature("Scenario"),
             par(mfrow=c(1, 1))
             ds <- seq(min(x@dose_set), max(x@dose_set), length.out=100)
             plot(ds, (1 + exp(-(x@theta[1] + x@theta[2] * log(ds))))^-1, type="l", ylim=c(0, 1), col=2,
-                 xlab="Dose", ylab="P(Toxicity)", las=1)
-            abline(h=x@r, col=1, lty=2)
+                 xlab="Dose", ylab="P(Toxicity)", main="Simulation Scenarios", las=1, lwd=2)
+            abline(h=x@r, col=1, lty=2, lwd=2)
             #abline(v=x@dose_set,lty=3)
           }
 )
@@ -195,7 +199,7 @@ setMethod(f="plot", signature("Scenario"),
 setMethod(f="lines", signature("Scenario"),
           definition=function(x, col=1){
             ds <- seq(min(x@dose_set), max(x@dose_set), length.out=100)
-            lines(ds, (1 + exp(-(x@theta[1] + x@theta[2]*log(ds))))^-1, type="l", ylim=c(0, 1), col=col)
+            lines(ds, (1 + exp(-(x@theta[1] + x@theta[2] * log(ds))))^-1, type="l", ylim=c(0, 1), col=col)
           }
 )
 
@@ -214,11 +218,13 @@ setMethod(f="print", signature("DoseOutput"),
           definition=function(x){
             print(x@text)
           })
+
 #############
 # dose-escalation input prior and response data so far, main output is recommended dose for next cohort. 
 # output: DoseOutput list including text(stopping reason), recommendation (dose for the next cohort), estimate(dose at r), CI
 dose_escalation <- function(r, prior, dose, response, dose_set, sample_size, next_cohortsize,
-                            cstop, allocation_rule, tuning=numeric(0), prior_type, lowstart, noskip, notoxesc){
+                            cstop, allocation_rule, tuning=numeric(0), prior_type, lowstart,
+                            noskip, notoxesc, maxseq){
   
   allocation_rule <- new(allocation_rule, pars=tuning)
   logdoseSet <- log(dose_set)
@@ -280,36 +286,104 @@ dose_escalation <- function(r, prior, dose, response, dose_set, sample_size, nex
     
   if(dose_estimate==Inf){
     
-    text <- "Stop recruitment, the dose estimate is very large."
+    text <- "Stop recruitment: no safe dose could be identified because the slope of the dose-response model was zero."
     recommendation <- integer(0)
-    finalrec <- RecDose
+    CIlow95 <- 0
+    CIupp95 <- 1e6
+    finalrec <- -999
     
   }else{
     
-    ## Calculate 95% CI for TD100r
-    vec1 <- c(1/theta2, log(dose_estimate)/theta2)
-    asympVar_log <- t(vec1) %*% vcov %*% vec1
-    CIlow95 <- dose_estimate * exp(-qnorm(0.975) * sqrt(asympVar_log))
-    CIupp95 <- dose_estimate * exp(qnorm(0.975) * sqrt(asympVar_log))
-    #############################################
-    #Statements for the displayed text
-    
-    if(theta2 <= 0) text <- "Stop recruitment, the slope of the dose-response model is zero or negative."
-    
-    if(CIupp95/CIlow95 <= cstop) text <- "Stop recruitment, the required level of accuracy has been reached."
-    
-    if(length(doses) - pseudo_length >= sample_size) text <- "Stop recruitment, the maximum number of patients has been reached."
-    
-    if(FIT$converged==FALSE) text <- "Repeat the previous dose."
-    
-    if(CIupp95/CIlow95 > cstop & theta2 > 0 & length(doses) - pseudo_length < sample_size & FIT$converged==TRUE){
-      text <- paste("Given the prior opinion and data from the last ", length(dose),
-                    " patients, the recommended dose for the next cohort of patients is ", RecDose, ".", sep="")
-      recommendation <- RecDose
-      finalrec <- integer(0)
+    if(FIT$converged==FALSE){
+
+      text <- "Repeat the previous dose."
+      
     }else{
-      recommendation <- integer(0)
-      finalrec <- RecDose
+      
+      ## Calculate 95% CI for TD100r
+      vec1 <- c(1/theta2, log(dose_estimate)/theta2)
+      asympVar_log <- t(vec1) %*% vcov %*% vec1
+      CIlow95 <- dose_estimate * exp(-qnorm(0.975) * sqrt(asympVar_log))
+      CIupp95 <- dose_estimate * exp(qnorm(0.975) * sqrt(asympVar_log))
+      #############################################
+      #Statements for the displayed text
+      
+      if(dose_estimate < min(dose_set) & theta2 > 0){
+        text <- "Stop recruitment: no safe dose could be identified."
+        recommendation <- integer(0)
+        finalrec <- -999
+      }
+      
+      if(theta2 <= 0){
+        text <- "Stop recruitment: no safe dose could be identified because the slope of the dose-response model was negative."
+        recommendation <- integer(0)
+        finalrec <- -999
+      }
+      
+      if(dose_estimate >= min(dose_set) & theta2 > 0){
+        
+        if(length(doses) - pseudo_length >= sample_size & CIupp95/CIlow95 > cstop){
+          text <- "Stop recruitment: the maximum number of patients has been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(doses) - pseudo_length >= sample_size & CIupp95/CIlow95 <= cstop){
+          text <- "Stop recruitment: the maximum number of patients, and the desired level of accuracy, have both been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(doses) - pseudo_length < sample_size & CIupp95/CIlow95 <= cstop){
+          text <- "Stop recruitment: the desired level of accuracy has been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(dose) >= maxseq & length(unique(dose[max(length(dose) - maxseq + 1, 1):length(dose)]))==1 &
+           CIupp95/CIlow95 > cstop & length(doses) - pseudo_length < sample_size){
+          text <- "Stop recruitment: the maximum number of consecutive patients at the same dose has been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(dose) >= maxseq & length(unique(dose[max(length(dose) - maxseq + 1, 1):length(dose)]))==1 &
+           CIupp95/CIlow95 <= cstop & length(doses) - pseudo_length < sample_size){
+          text <- "Stop recruitment: the maximum number of consecutive patients at the same dose, and the desired level of accuracy, have both been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(dose) >= maxseq & length(unique(dose[max(length(dose) - maxseq + 1, 1):length(dose)]))==1 &
+           CIupp95/CIlow95 > cstop & length(doses) - pseudo_length >= sample_size){
+          text <- "Stop recruitment: the maximum number of consecutive patients at the same dose, and the maximum number of patients, have both been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(dose) >= maxseq & length(unique(dose[max(length(dose) - maxseq + 1, 1):length(dose)]))==1 &
+           CIupp95/CIlow95 <= cstop & length(doses) - pseudo_length >= sample_size){
+          text <- "Stop recruitment: the maximum number of consecutive patients at the same dose, the maximum number of patients, and the desired level of accuracy, have all been reached."
+          recommendation <- integer(0)
+          finalrec <- RecDose
+        }
+        
+        if(length(dose) < maxseq | (length(dose) >= maxseq &
+                                    length(unique(dose[max(length(dose) - maxseq + 1, 1):length(dose)])) > 1)){
+          if(CIupp95/CIlow95 > cstop & theta2 > 0 & length(doses) - pseudo_length < sample_size &
+             FIT$converged==TRUE & dose_estimate >= min(dose_set)){
+            text <- paste("Given the prior information and data from the last ", length(dose),
+                          " patients, the recommended dose for the next cohort of patients is ", RecDose, ".", sep="")
+            recommendation <- RecDose
+            finalrec <- integer(0)
+          }else{
+            recommendation <- integer(0)
+            finalrec <- RecDose
+          }
+        }
+        
+      }
+      
     }
     
   }
@@ -323,12 +397,13 @@ dose_escalation <- function(r, prior, dose, response, dose_set, sample_size, nex
 #simulation_escalation gives one simulation
 #output: history(), recs(recommended dose),stopping (reason),
 simulate_escalation <- function(theta_true, r, prior, dose_set, sample_size, next_cohortsize, cstop,
-                                allocation_rule, tuning=numeric(0), prior_type, lowstart, noskip, notoxesc, seed=NULL){
+                                allocation_rule, tuning=numeric(0), prior_type, lowstart, noskip,
+                                notoxesc, maxseq, seed=NULL){
   true_value <- exp((log(r/(1 - r)) - theta_true[1])/theta_true[2])
   if (!is.null(seed)) set.seed(seed)
   dose <- response <- NULL
   rec <- dose_escalation(r, prior, dose, response, dose_set, sample_size, next_cohortsize, cstop,
-                         allocation_rule, tuning, prior_type, lowstart, noskip, notoxesc)
+                         allocation_rule, tuning, prior_type, lowstart, noskip, notoxesc, maxseq)
   history <- data.frame()
   round <- 0
   recs <- data.frame(round=round, pme_estimate=rec@pme_estimate, pme_intercept=rec@pme_intercept,
@@ -341,7 +416,7 @@ simulate_escalation <- function(theta_true, r, prior, dose_set, sample_size, nex
     history <- rbind(history, data.frame(round=rep(round, next_cohortsize),
                                          dose=rep(rec@recommendation, next_cohortsize), response=new_resp))
     rec <- dose_escalation(r, prior, dose, response, dose_set, sample_size, next_cohortsize, cstop,
-                           allocation_rule, tuning, prior_type, lowstart, noskip, notoxesc)
+                           allocation_rule, tuning, prior_type, lowstart, noskip, notoxesc, maxseq)
     recs <- rbind(recs, data.frame(round=round, pme_estimate=rec@pme_estimate, pme_intercept=rec@pme_intercept,
                                    pme_slop=rec@pme_slop, lower=rec@CI[1], upper=rec@CI[2]))
   }
@@ -412,13 +487,13 @@ theta_compute <- function(risk_high, risk_low, TD_high, TD_low){
 #  return(scenar)
 #}
 
-prior_scenar <- function(TD_high, TD_low, risk_high, risk_low, number_high, number_low){
-  scenar <- matrix(0, 6, 6)
-  scenar[, 1] <- number_low
-  scenar[, 2] <- number_high
-  scenar[, 3] <- TD_low
-  scenar[, 4] <- TD_high
-  scenar56 <- matrix(round(c(risk_low * 1.0, risk_high * 1.0, # standard
+truth_scenar <- function(TD_high, TD_low, risk_high, risk_low){
+  scenar <- matrix(0, 6, 4)
+  #scenar[, 1] <- number_low
+  #scenar[, 2] <- number_high
+  scenar[, 1] <- TD_low
+  scenar[, 2] <- TD_high
+  scenar34 <- matrix(round(c(risk_low * 1.0, risk_high * 1.0, # standard
                              risk_low * 1.2, risk_high * 1.2, # potent
                              risk_low * 0.8, risk_high * 0.8, # inactive
                              risk_low * 0.8, risk_high * 1.2, # steep
@@ -427,7 +502,7 @@ prior_scenar <- function(TD_high, TD_low, risk_high, risk_low, number_high, numb
                            digit=2), 2, 6)
   #scenar34[1, scenar34[1, ] < TD_low] <- TD_low
   #scenar34[2, scenar34[2, ] > TD_high] <- TD_high
-  scenar[, 5:6] <- t(scenar56)
+  scenar[, 3:4] <- t(scenar34)
   return(scenar)
 }
 

@@ -24,7 +24,7 @@ Both modules generate a variety of graphs to visualise data and design propertie
 Zhou Y, Whitehead J (2003) Practical implementation of Bayesian dose-escalation procedures. \emph{Drug Information Journal}, \strong{37}(1), 45--59.
 }
 \author{
-Philip Pallmann (\email{p.pallmann@lancaster.ac.uk})
+Philip Pallmann (\email{pallmannp@cardiff.ac.uk})
 }
 \examples{\donttest{
 design()

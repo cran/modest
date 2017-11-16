@@ -1,0 +1,300 @@
+\documentclass[10pt, a4]{article}
+\usepackage[left=2.54cm, right=2.54cm, top=2cm, bottom=2.75cm]{geometry}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{datetime}
+\usepackage{url}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[hyperfootnotes=false]{hyperref}
+\usepackage{longtable}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+\lhead{\textit{\footnotesize Generated from dose escalation web application on \ddmmyyyydate\today\ at \currenttime.}}
+\chead{}
+\rhead{}
+\rfoot{}
+\cfoot{\thepage}
+\lfoot{}
+
+\setlength{\parindent}{0pt}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\begin{document}
+
+\begin{center}
+\begin{LARGE}
+Dose Escalation Study: Summary Report of Simulations
+\end{LARGE}
+\end{center}
+
+\vspace{8mm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Design and Prior Information}
+
+<<Chunk0, echo=FALSE>>=
+thetatrue <- theta_compute(risk_high=input$failrate2true, risk_low=input$failrate1true,
+                             TD_high=input$dose2true, TD_low=input$dose1true)
+@
+
+Design parameters:
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{lc}
+\hline
+Maximum number of patients & \Sexpr{input$n_patients} \\
+Patients per cohort & \Sexpr{input$cohort_size} \\
+Target toxicity level & \Sexpr{input$target_level} \\
+Dose levels & \Sexpr{as.numeric(unlist(strsplit(input$doses, ",")))} \\
+True model intercept & \Sexpr{sprintf("%.2f", round(thetatrue[1], 2))} \\
+True model slope & \Sexpr{sprintf("%.2f", round(thetatrue[2], 2))} \\
+Accurary for stopping & \Sexpr{input$cstop} \\
+Gain function & \Sexpr{input$gainfunction} \\
+Always start at lowest dose & \Sexpr{input$lowstart} \\
+No skipping over doses & \Sexpr{input$noskip} \\
+No escalating after toxicity & \Sexpr{input$notoxesc} \\
+Maximum consecutive patients at a dose & \Sexpr{ifelse(input$consec==TRUE, input$consecutive, 1e6)} \\\hline
+\end{tabular}
+\label{DesTab}
+\end{table}
+
+Prior information:
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{lcc}
+\hline
+ & Dose \Sexpr{input$dose1} & Dose \Sexpr{input$dose2} \\ \hline
+Pseudo-observations & \Sexpr{input$obs1} & \Sexpr{input$obs2} \\
+Toxicity rate & \Sexpr{input$failrate1} & \Sexpr{input$failrate2} \\ \hline
+\end{tabular}
+\label{PriTab}
+\end{table}
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Prior and Simulation Model}
+
+The logistic model used to describe the dose-toxicity relationship has the form
+\begin{equation*}
+\log\left(\frac{\text{P(toxicity)}}{1 - \text{P(toxicity)}}\right) = \text{a} + \text{b} \times \log(\text{dose}).
+\end{equation*}
+The values of the parameters a (intercept) and b (slope) are displayed  for the simulation model (representing the assumed true dose-toxicity relationship) and for the model based on the prior information.
+
+<<Chunk1, echo=FALSE, results='asis'>>=
+library(xtable)
+
+doo <- as.numeric(unlist(strsplit(input$doses, ",")))
+
+prior <- data.frame(rbind(c(input$obs1, input$dose1, input$failrate1), c(input$obs2, input$dose2, input$failrate2)))
+colnames(prior) <- c("obs", "dos", "fai")
+glmfit <- suppressWarnings(glm(fai ~ log(dos), weights=obs, data=prior, family="binomial"))
+
+table <- rbind(thetatrue, glmfit$coef[1:2])
+rownames(table) <- c("Simulation model", "Prior model")
+colnames(table) <- c("Intercept", "Slope")
+
+print(xtable(table, align='ccc'))
+@
+
+Here is a plot of the simulation model, the dose-toxicity relationship implied by the prior information,  and the target toxicity level. The target dose is the dose for which, under the true model, the toxicity rate is equal to the target level.
+
+<<Chunk2, echo=FALSE, fig.height=6.5, fig.width=6.5, fig.pos="!ht", fig.align="center">>=
+doo <- as.numeric(unlist(strsplit(input$doses, ",")))
+doodle <- seq(min(doo), max(doo), length.out=100)
+
+thetatrue <- theta_compute(risk_high=input$failrate2true, risk_low=input$failrate1true,
+                           TD_high=input$dose2true, TD_low=input$dose1true)
+
+true_value <- exp((log(input$target_level / (1 - input$target_level)) - thetatrue[1]) / thetatrue[2])
+plot(doodle, (1 + exp(-(thetatrue[1] + thetatrue[2] * log(doodle))))^(-1), type="n", xlab="Dose",
+     ylab="P(Toxicity)", xlim=range(doo), ylim=c(0, 1), main="Dose-Toxicity Curves", las=1)
+abline(v=doo, col="grey90")
+abline(h=input$target_level, lwd=2, lty=2)
+lines(doodle, (1 + exp(-(thetatrue[1] + thetatrue[2] * log(doodle))))^(-1), type="l", col=4, lwd=2)
+
+prior <- data.frame(rbind(c(input$obs1, input$dose1, input$failrate1), c(input$obs2, input$dose2, input$failrate2)))
+colnames(prior) <- c("obs", "dos", "fai")
+glmfit <- suppressWarnings(glm(fai ~ log(dos), weights=obs, data=prior, family="binomial"))
+preddata <- with(prior, data.frame(dos=seq(min(doodle), max(doodle), length=100)))
+preds <- predict(glmfit, newdata=preddata, type="link", se.fit=TRUE)
+upr <- preds$fit + (qnorm(0.975) * preds$se.fit)
+lwr <- preds$fit - (qnorm(0.975) * preds$se.fit)
+fit <- preds$fit
+fit2 <- glmfit$family$linkinv(fit)
+upr2 <- glmfit$family$linkinv(upr)
+lwr2 <- glmfit$family$linkinv(lwr)
+lines(preddata$dos, fit2, col=3, lwd=2)
+lines(preddata$dos, upr2, col=3, lwd=2, lty=3)
+lines(preddata$dos, lwr2, col=3, lwd=2, lty=3)
+intcpt <- exp((log(input$target_level / (1 - input$target_level)) - glmfit$coef[1]) / glmfit$coef[2])
+points(input$dose1, input$failrate1, pch="+", cex=2, col=3)
+points(input$dose2, input$failrate2, pch="+", cex=2, col=3)
+legend("topleft", lty=c(2, 1, 1, 3), lwd=2, col=c(1, 4, 3, 3),
+       legend=c(paste("Target toxicity level (", formatC(input$target_level, format='f', digits=2), ")", sep=""),
+                paste("Assumed true dose-toxicity relationship (target dose: ", formatC(true_value, format='f', digits=2), ")", sep=""),
+                paste("Prior dose-toxicity estimate (MTD: ", formatC(intcpt, format='f', digits=2), ")", sep=""),
+                "95% pointwise confidence band (normal approximation)"), bty="n", cex=0.7)
+@
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{An Example Run}
+
+Here are plots of one set of random study data generated under the current simulation scenario: doses administered and (non-)toxicities observed for individual patients (top left); how often each dose was administered (top right); target dose (red) and optimal dose estimates (black) with 95\% CIs (dashed) after each cohort (bottom).
+
+<<Chunk3, echo=FALSE, fig.height=6.5, fig.width=6.5, fig.pos="ht", fig.align="center">>=
+prior <- rbind(c(input$obs1, input$dose1, input$failrate1), c(input$obs2, input$dose2, input$failrate2))
+
+x <- simulate_escalation(theta_true=thetatrue, r=input$target_level, prior=prior, dose_set=doo,
+                         sample_size=input$n_patients, next_cohortsize=input$cohort_size, cstop=input$cstop,
+                         allocation_rule=input$gainfunction, prior_type=NULL, lowstart=input$lowstart,
+                         noskip=input$noskip, notoxesc=input$notoxesc,
+                         maxseq=ifelse(input$consec, input$consecutive, 1e6))
+
+par(mfrow=c(2, 2), las=1)
+plot(NULL, xlim=c(1, dim(x@history)[1]), ylim=range(doo), xlab="Patient", ylab="Dose", main="Toxicities Observed")
+null <- sapply(1:dim(x@history)[1], function(n){
+  points(x=n, y=x@history$dose[n], pch=x@history$response[n] + 21, bg=x@history$response[n])
+})
+legend(x=1, y=max(x@dose_set), legend=c("non-toxic", "toxic"), pch=c(21, 22), pt.bg=c(0, 1), bty="n", cex=0.7)
+
+barplot(table(factor(x@history$dose, levels=x@dose_set)), xlab="Dose", ylab="Patients", main="Doses Administered")
+
+plot(x@recs$round, x@recs$pme_estimate, type="l",
+     ylim=c(min(x@recs$lower, x@true_value),
+            max(if(max(x@recs$upper)==Inf){x@true_value}else{x@recs$upper}, x@true_value)),
+     xlab="Cohort", ylab="Dose", main="MTD Estimates", lwd=2, col=4)
+lines(x@recs$round, x@recs$lower, type="l", lty=3, lwd=2, col=4)
+lines(x@recs$round, x@recs$upper, type="l", lty=3, lwd=2, col=4)
+abline(h=x@true_value, lty=2, lwd=2)
+legend("topright", lty=c(2, 1, 3), lwd=2, col=c(1, 4, 4), legend=c("True MTD", "MTD estimate", "95% confidence band"),
+       bty="n", cex=0.7)
+@
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Simulation Scenarios}
+
+Here are six default scenarios for simulation based on Table 1 of Zhou \& Whitehead (2003, Drug Inf J). The `standard' scenario is the one determined by the prior information, and the other five are directly derived from it.
+
+<<Chunk4, echo=FALSE, results='asis'>>=
+scenar <- truth_scenar(TD_high=input$dose2true, TD_low=input$dose1true,
+                       risk_high=input$failrate2true, risk_low=input$failrate1true)
+thetas <- matrix(NA, 6, 2)
+for(i in 1:6){
+  thetas[i, ] <- theta_compute(scenar[i, 4], scenar[i, 3], scenar[i, 2], scenar[i, 1])
+}
+
+table <- cbind(scenar, thetas)
+rownames(table) <- c("Standard", "Potent", "Inactive", "Steep", "Very potent", "Very inactive")
+colnames(table) <- c("Dose (low)", "Dose (high)", "Toxicity rate (low)", "Toxicity rate (high)", "Intercept", "Slope")
+
+print(xtable(table, align='ccccccc'))
+@
+
+Here is a plot of the dose-toxicity models implied by the six default scenarios.
+
+<<Chunk5, echo=FALSE, fig.height=6.5, fig.width=6.5, fig.pos="!ht", fig.align="center">>=
+prior <- rbind(c(input$obs1, input$dose1, input$failrate1), c(input$obs2, input$dose2, input$failrate2))
+glmfit <- suppressWarnings(glm(prior[, 3] ~ log(prior[, 2]), weights=prior[, 1], family="binomial"))
+theta1p <- glmfit$coef[1]
+theta2p <- glmfit$coef[2]
+
+plot(new("Scenario", theta=theta_compute(scenar[1, 4], scenar[1, 3], scenar[1, 2], scenar[1, 1]),
+         r=input$target_level, dose_set=doo))
+abline(v=doo, col="grey90")
+par(lwd=2)
+for(i in 2:6){
+  lines(new("Scenario", theta=theta_compute(scenar[i, 4], scenar[i, 3], scenar[i, 2], scenar[i, 1]),
+            r=input$target_level, dose_set=doo), col=1 + i)
+}
+par(lwd=1)
+lines(doo, (1 + exp(-(theta1p + theta2p * log(doo))))^(-1), col="grey", lwd=2)
+legend("topleft", legend=c("Target toxicity level", "Standard", "Potent", "Inactive", "Steep",
+                           "Very potent", "Very inactive", "Prior"), col=c(1, 1000 + 2:7, "grey"),
+       lty=c(2, rep(1, 7)), lwd=2, bty="n", cex=0.7)
+@
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Simulation Results}
+
+Here are simulation results. Sample size, maximum likelihood estimate (MLE) of the MTD, mean squared error (MSE), bias, and toxicity rate are averaged over all simulation runs.
+
+<<Chunk6, echo=FALSE, results='asis'>>=
+print(xtable(v$data[, c(1:6, 8)], align='cccccccc'), sanitize.colnames.function=function(x)gsub("\\.", " ", x))
+@
+
+Percentage of simulation runs where the study was stopped for the following reasons:
+
+<<Chunk7, echo=FALSE, results='asis'>>=
+print(xtable(v$data[, c(1, 14:17)], align='cccccc'), sanitize.colnames.function=function(x)gsub("\\.", " ", x))
+@
+
+NB: more than one reason may apply at a time.
+
+\clearpage
+
+Here are plots summarising the simulation results for the current scenario: number of patients used in each study (top left); number of toxicities observed per study (top right); reasons for stopping each study (bottom left); dose recommendations at the end of each study (bottom right).
+
+<<Chunk8, echo=FALSE, fig.height=6.5, fig.width=6.5, fig.pos="!ht", fig.align="center">>=
+par(mfrow=c(2, 2))
+barplot(table(factor(v$dat[, "SampleSize"])), xlab="Sample Size", ylab="Trials", main="Sample Sizes", las=1)
+barplot(table(factor(v$dat[, "Toxicities"])), xlab="Toxicities", ylab="Trials", main="Toxicities Observed", las=1)
+barplot(table(factor(v$dat[, "Stopping"])), xlab="Reason", ylab="Trials", main="Stopping Reasons", las=1)
+if("None" %in% levels(factor(v$dat[, "Recommendation"]))){
+  fff <- factor(v$dat[, "Recommendation"],
+                levels=c("None", sort(as.numeric(levels(factor(v$dat[, "Recommendation"]))[-length(levels(factor(v$dat[, "Recommendation"])))]))))
+  barplot(table(fff), xlab="Dose", ylab="Trials", main="Final Dose Recommendations", las=1)
+}else{
+  fff <- factor(v$dat[, "Recommendation"], levels=sort(as.numeric(levels(factor(v$dat[, "Recommendation"])))))
+  barplot(table(fff), xlab="Dose", ylab="Trials", main="Final Dose Recommendations", las=1)
+}
+
+#if("None" %in% levels(factor(v$dat[, "Recommendation"]))){
+#  barplot(table(relevel(factor(v$dat[, "Recommendation"]), ref="None")), xlab="Dose", ylab="Trials",
+#          main="Final Dose Recommendations", las=1)
+#}else{
+#  barplot(table(factor(v$dat[, "Recommendation"])), xlab="Dose", ylab="Trials", main="Final Dose Recommendations", #las=1)
+#}
+@
+
+\clearpage
+
+Here are detailed results of all simulation runs under the current scenario.
+
+<<Chunk9, echo=FALSE, results='asis'>>=
+print(xtable(v$da, align='cccccc'), tabular.environment="longtable", floating=FALSE,
+      sanitize.colnames.function=function(x)gsub("\\.", " ", x))
+@
+
+\end{document}

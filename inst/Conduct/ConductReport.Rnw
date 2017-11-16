@@ -1,0 +1,289 @@
+\documentclass[10pt, a4]{article}
+\usepackage[left=2.54cm, right=2.54cm, top=2cm, bottom=2.75cm]{geometry}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{datetime}
+\usepackage{url}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[hyperfootnotes=false]{hyperref}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+\lhead{\textit{\footnotesize Generated from \url{https://lancs.shinyapps.io/Conduct/} on \ddmmyyyydate\today\ at \currenttime.}}
+\chead{}
+\rhead{}
+\rfoot{}
+\cfoot{\thepage}
+\lfoot{}
+
+\setlength{\parindent}{0pt}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\begin{document}
+
+\begin{center}
+\begin{LARGE}
+Dose Escalation Study: Summary Report
+\end{LARGE}
+\end{center}
+
+\vspace{8mm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Design and Prior Information}
+
+<<Chunk0, echo=FALSE>>=
+gainfunction <- as.vector(inDesignFile()[1, 2])
+samplesize <- as.numeric(as.vector(inDesignFile()[2, 2]))
+cohortsize <- as.numeric(as.vector(inDesignFile()[3, 2]))
+samplesizeA <- as.numeric(as.vector(inDesignFile()[4, 2]))
+doseA <- as.numeric(as.vector(inDesignFile()[5, 2]))
+eventrateA <- as.numeric(as.vector(inDesignFile()[6, 2]))
+samplesizeB <- as.numeric(as.vector(inDesignFile()[7, 2]))
+doseB <- as.numeric(as.vector(inDesignFile()[8, 2]))
+eventrateB <- as.numeric(as.vector(inDesignFile()[9, 2]))
+cstop <- as.numeric(as.vector(inDesignFile()[10, 2]))
+targetlevel <- as.numeric(as.vector(inDesignFile()[11, 2]))
+lowstart <- as.logical(as.vector(inDesignFile()[12, 2]))
+noskip <- as.logical(as.vector(inDesignFile()[13, 2]))
+notoxesc <- as.logical(as.vector(inDesignFile()[14, 2]))
+maxseq <- as.numeric(as.vector(inDesignFile()[15, 2]))
+doses <- as.numeric(as.vector(inDesignFile()[16:nrow(inDesignFile()), 2]))
+
+if(input$howtoenter==FALSE){
+  
+  inFile <- input$file
+  if(is.null(inFile)){
+    FILE <- NULL
+  }else{
+    FILE <- read.csv(file=inFile$datapath, header=input$head, sep=input$sep, dec=input$dec)
+  }
+  
+}else{
+  
+  FILE <- values[["hot"]]
+  
+}
+
+newcohorts <- FILE[, input$cohortchoice]
+newdoses <- FILE[, input$dosechoice]
+newresponses <- FILE[, input$outcomechoice]
+@
+
+Design parameters:
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{lc}
+\hline
+Maximum number of patients & \Sexpr{samplesize} \\
+Patients per cohort & \Sexpr{cohortsize} \\
+Target toxicity level & \Sexpr{targetlevel} \\
+Dose levels & \Sexpr{doses} \\
+Accurary for stopping & \Sexpr{cstop} \\
+Gain function & \Sexpr{gainfunction} \\
+Always start at lowest dose & \Sexpr{lowstart} \\
+No skipping over doses & \Sexpr{noskip} \\
+No escalating after toxicity & \Sexpr{notoxesc} \\
+Maximum consecutive patients at a dose & \Sexpr{maxseq} \\\hline
+\end{tabular}
+\label{DesTab}
+\end{table}
+
+Prior information:
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{lcc}
+\hline
+ & Dose \Sexpr{doseA} & Dose \Sexpr{doseB} \\ \hline
+Pseudo-observations & \Sexpr{samplesizeA} & \Sexpr{samplesizeB} \\
+Toxicity rate & \Sexpr{eventrateA} & \Sexpr{eventrateB} \\ \hline
+\end{tabular}
+\label{PriTab}
+\end{table}
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Study Data}
+
+Patient data (0: no toxicity; 1: toxicity):
+
+<<Chunk1, echo=FALSE, results='asis'>>=
+newdat <- data.frame(Cohort = FILE[, input$cohortchoice],
+                     Dose = FILE[, input$dosechoice],
+                     Toxicity = FILE[, input$outcomechoice])
+
+library(xtable)
+xtable(newdat, align="cccc")
+@
+
+\clearpage
+
+Here are plots of the study data: doses administered and (non-)toxicities observed for individual patients (top), and how often each dose was administered (bottom).
+
+<<Chunk2, echo=FALSE, fig.height=8.5, fig.width=4, fig.pos="!ht", fig.align="center">>=
+par(mfrow=c(2, 1))
+plot(NULL, xlim=c(1, length(newcohorts)), ylim=range(doses), xlab="Patient", ylab="Dose", main="Toxicities Observed",
+     las=1)
+null <- sapply(1:length(newcohorts), function(n){
+  points(x=n, y=newdoses[n], pch=newresponses[n] + 21, bg=newresponses[n])
+})
+legend(x=1, y=max(doses), legend=c("non-toxic", "toxic"), pch=c(21, 22), pt.bg=c(0, 1), bty="n")
+
+barplot(table(factor(newdoses, levels=levels(as.factor(newdoses)))), xlab="Dose", ylab="Patients",
+        main="Doses Administered", las=1)
+@
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Results}
+
+<<Chunk4, echo=FALSE, results='asis'>>=
+baba <- makeStuff()
+@
+
+\textbf{Recommendation:} \Sexpr{baba}
+
+\vspace{5mm}
+
+The logistic model used to describe the dose-toxicity relationship has the form
+\begin{equation*}
+\log\left(\frac{\text{P(toxicity)}}{1 - \text{P(toxicity)}}\right) = \text{a} + \text{b} \times \log(\text{dose}).
+\end{equation*}
+The values of the parameters a (intercept) and b (slope) are displayed for the prior and posterior models.
+
+Here is a plot of the dose-toxicity relationship as implied by the prior information and after updating the model with study data, and the target toxicity level.
+
+<<Chunk5, echo=FALSE, fig.height=6.5, fig.width=6.5, fig.pos="!ht", fig.align="center">>=
+dose_resp <- dose_escalation(r = targetlevel,
+                             prior = matrix(data=c(samplesizeA, samplesizeB, doseA, doseB, eventrateA, eventrateB),
+                                            ncol=3),
+                             dose = FILE[, input$dosechoice],
+                             response = FILE[, input$outcomechoice],
+                             dose_set = doses,
+                             sample_size = samplesize,
+                             next_cohortsize = cohortsize,
+                             cstop = cstop,
+                             allocation_rule = gainfunction,
+                             prior_type = NULL,
+                             lowstart = lowstart,
+                             noskip = noskip,
+                             notoxesc = notoxesc,
+                             maxseq = maxseq)
+
+newdat <- data.frame(newcohorts=newcohorts,
+                     newdoses=newdoses,
+                     newresponses=newresponses)
+
+ncohorts <- nlevels(as.factor(newcohorts))
+
+doodle <- seq(min(doses), max(doses), length.out=100)
+
+thetatrue <- theta_compute(risk_high=eventrateB, risk_low=eventrateA, TD_high=doseB, TD_low=doseA)
+true_value <- round(exp((log(targetlevel / (1 - targetlevel)) - thetatrue[1]) / thetatrue[2]), 2)
+
+plot(doodle, (1 + exp(-(thetatrue[1] + thetatrue[2] * log(doodle))))^(-1), type="n", xlab="Dose",
+     ylab="P(Toxicity)", xlim=range(doses), ylim=c(0, 1), main="Dose-Toxicity Curves", las=1)
+abline(v=doses, col="grey90")
+abline(h=targetlevel, lwd=2, lty=2)
+
+prior <- data.frame(rbind(c(samplesizeA, doseA, eventrateA), c(samplesizeB, doseB, eventrateB)))
+colnames(prior) <- c("obs", "dos", "fai")
+glmfitt <- suppressWarnings(glm(fai ~ log(dos), weights=obs, data=prior, family="binomial"))
+preddata <- with(prior, data.frame(dos=seq(min(doodle), max(doodle), length=100)))
+preds <- predict(glmfitt, newdata=preddata, type="link", se.fit=TRUE)
+upr <- preds$fit + (qnorm(0.975) * preds$se.fit)
+lwr <- preds$fit - (qnorm(0.975) * preds$se.fit)
+fit <- preds$fit
+fit2 <- glmfitt$family$linkinv(fit)
+upr2 <- glmfitt$family$linkinv(upr)
+lwr2 <- glmfitt$family$linkinv(lwr)
+lines(preddata$dos, fit2, col=3, lwd=2)
+lines(preddata$dos, upr2, col=3, lwd=2, lty=3)
+lines(preddata$dos, lwr2, col=3, lwd=2, lty=3)
+intcpt <- exp((log(input$target_level / (1 - input$target_level)) - glmfitt$coef[1]) / glmfitt$coef[2])
+
+dodo <- c(rep(prior[, 2], times=prior[, 1]), newdat[, 2]) #NB: Wont work if a non-integer 
+rere <- c(rep(prior[, 3], times=prior[, 1]), newdat[, 3])
+dada <- data.frame(cbind(dodo, rere))
+colnames(dada) <- c("dos", "res")
+glmfit <- suppressWarnings(glm(res ~ log(dos), data=dada, family="binomial"))
+preddata <- with(dada, data.frame(dos=seq(min(doodle), max(doodle), length=100)))
+preds <- predict(glmfit, newdata=preddata, type="link", se.fit=TRUE)
+upr <- preds$fit + (qnorm(0.975) * preds$se.fit)
+lwr <- preds$fit - (qnorm(0.975) * preds$se.fit)
+fit <- preds$fit
+fit2 <- glmfit$family$linkinv(fit)
+upr2 <- glmfit$family$linkinv(upr)
+lwr2 <- glmfit$family$linkinv(lwr)
+lines(preddata$dos, fit2, col=2, lwd=2)
+lines(preddata$dos, upr2, col=2, lwd=2, lty=3)
+lines(preddata$dos, lwr2, col=2, lwd=2, lty=3)
+inter <- round(exp((log(targetlevel / (1 - targetlevel)) - glmfit$coef[1]) / glmfit$coef[2]), 2)
+
+if(dose_resp@text %in% c("Stop recruitment: no safe dose could be identified.",
+                         "Stop recruitment: no safe dose could be identified because the slope of the dose-response model was zero.",
+                         "Stop recruitment: no safe dose could be identified because the slope of the dose-response model was negative.",
+                         "Stop recruitment: the maximum number of patients has been reached.",
+                         "Stop recruitment: the maximum number of patients and the required level of accuracy have both been reached.",
+                         "Stop recruitment: the required level of accuracy has been reached.") | input$terminate==TRUE){
+  
+  dod <- newdat[, 2]
+  rer <- newdat[, 3]
+  dad <- data.frame(cbind(dod, rer))
+  colnames(dad) <- c("dos", "res")
+  glmfi <- suppressWarnings(glm(res ~ log(dos), data=dad, family="binomial"))
+  preddata <- with(dad, data.frame(dos=seq(min(doodle), max(doodle), length=100)))
+  preds <- predict(glmfi, newdata=preddata, type="link", se.fit=TRUE)
+  upr <- preds$fit + (qnorm(0.975) * preds$se.fit)
+  lwr <- preds$fit - (qnorm(0.975) * preds$se.fit)
+  fit <- preds$fit
+  fit2 <- glmfit$family$linkinv(fit)
+  upr2 <- glmfit$family$linkinv(upr)
+  lwr2 <- glmfit$family$linkinv(lwr)
+  lines(preddata$dos, fit2, col=4, lwd=2)
+  lines(preddata$dos, upr2, col=4, lwd=2, lty=3)
+  lines(preddata$dos, lwr2, col=4, lwd=2, lty=3)
+  intermle <- round(exp((log(targetlevel / (1 - targetlevel)) - glmfi$coef[1]) / glmfi$coef[2]), 2)
+        
+  legend("topleft", lty=c(2, 1, 3, 1, 3, 1, 3), col=c(1, 3, 3, 2, 2, 4, 4),
+         legend=c(paste("Target toxicity level (", formatC(targetlevel, format='f', digits=2), ")", sep=""),
+                  paste("Prior dose-toxicity estimate (MTD: ", formatC(true_value, format='f', digits=2), ")", sep=""),
+                  "95% pointwise confidence band (normal approximation)",
+                  paste("Final dose-toxicity estimate based on prior & patient data (MTD: ", formatC(inter, format='f', digits=2), ")", sep=""),
+                  "95% pointwise confidence band (normal approximation)",
+                  paste("Final dose-toxicity estimate based on patient data only (MTD: ", formatC(intermle, format='f', digits=2), ")", sep=""),
+                  "95% pointwise confidence band (normal approximation)"), lwd=2, cex=0.7, bty="n")
+  
+}else{
+  
+  legend("topleft", lty=c(2, 1, 3, 1, 3), col=c(1, 3, 3, 2, 2),
+         legend=c(paste("Target toxicity level (", formatC(targetlevel, format='f', digits=2), ")", sep=""),
+                  paste("Prior dose-toxicity estimate (MTD: ", formatC(true_value, format='f', digits=2), ")", sep=""),
+                  "95% pointwise confidence band (normal approximation)",
+                  paste("Current dose-toxicity estimate based on prior & patient data (MTD: ", formatC(inter, format='f', digits=2), ")", sep=""),
+                  "95% pointwise confidence band (normal approximation)"), lwd=2, cex=0.7, bty="n")
+  
+}
+@
+
+\end{document}
